@@ -6,7 +6,7 @@ set -eu
 
 status() { echo ">>> $*" >&2; }
 error() { echo "ERROR $*"; exit 1; }
-warning() { echo "WARNING: $*"; }
+warning() { echo "WARNING this happened: $*"; }
 
 TEMP_DIR=$(mktemp -d)
 cleanup() { rm -rf $TEMP_DIR; }
