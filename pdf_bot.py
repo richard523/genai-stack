@@ -52,43 +52,45 @@ def main():
     st.header("📄Chat with your pdf file")
 
     # upload a your pdf file
-    pdf = st.file_uploader("Upload your PDF", type="pdf")
 
-    if pdf is not None:
-        pdf_reader = PdfReader(pdf)
+    pdf_files = st.file_uploader("Upload your PDF", type="pdf", accept_multiple_files=True)
 
-        text = ""
-        for page in pdf_reader.pages:
-            text += page.extract_text()
+    for pdf in pdf_files:
+        if pdf is not None:
+            pdf_reader = PdfReader(pdf)
 
-        # langchain_textspliter
-        text_splitter = RecursiveCharacterTextSplitter(
-            chunk_size=1000, chunk_overlap=200, length_function=len
-        )
+            text = ""
+            for page in pdf_reader.pages:
+                text += page.extract_text()
 
-        chunks = text_splitter.split_text(text=text)
+            # langchain_textspliter
+            text_splitter = RecursiveCharacterTextSplitter(
+                chunk_size=1000, chunk_overlap=200, length_function=len
+            )
 
-        # Store the chunks part in db (vector)
-        vectorstore = Neo4jVector.from_texts(
-            chunks,
-            url=url,
-            username=username,
-            password=password,
-            embedding=embeddings,
-            index_name="pdf_bot",
-            node_label="PdfBotChunk",
-            pre_delete_collection=True,  # Delete existing PDF data
-        )
-        qa = RetrievalQA.from_chain_type(
-            llm=llm, chain_type="stuff", retriever=vectorstore.as_retriever()
-        )
+            chunks = text_splitter.split_text(text=text)
 
-        # Accept user questions/query
-        query = st.text_input("Ask questions about your PDF file")
+            # Store the chunks part in db (vector)
+            vectorstore = Neo4jVector.from_texts(
+                chunks,
+                url=url,
+                username=username,
+                password=password,
+                embedding=embeddings,
+                index_name="pdf_bot",
+                node_label="PdfBotChunk",
+                pre_delete_collection=True,  # Delete existing PDF data
+            )
+            qa = RetrievalQA.from_chain_type(
+                llm=llm, chain_type="stuff", retriever=vectorstore.as_retriever()
+            )
 
-        if query:
-            stream_handler = StreamHandler(st.empty())
-            qa.run(query, callbacks=[stream_handler])
+    # Accept user questions/query
+    query = st.text_input("Ask questions about your PDF file")
+
+    if query:
+        stream_handler = StreamHandler(st.empty())
+        qa.run(query, callbacks=[stream_handler])
 
 
 if __name__ == "__main__":
